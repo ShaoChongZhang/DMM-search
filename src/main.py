@@ -27,12 +27,7 @@ def addName(names):
         nameset.add(name)
 
         page = requests.get('https://www.dmm.co.jp/digital/videoa/-/list/=/article=actress/id=' + name + '/sort=date/')
-        tree = html.fromstring(page.content)
-        urls = [x for x in tree.xpath('//a/@href') if 'https://www.dmm.co.jp/digital/videoa/-/detail/=/cid=' in x]
-        
-        videos = set()
-        for url in urls:
-            videos.add(re.search(pattern, url).group(1))
+        videos = set(re.findall(pattern, page.text))
 
         with open('data\\' + name + '.txt', 'w') as hf:
             for video in videos:
@@ -53,7 +48,6 @@ def initialize():
         except:
             pass
      
-
     with open("data\\namelist.txt", "w") as f:
         pass
 
@@ -72,6 +66,9 @@ def update(argv):
     videodict = {}
     newvideodict = {}
     oldvideodict = {}
+
+    print("Updating")
+
     for name in updateset:
         try:
             with open('data\\' + name + '.txt', 'r') as f:
@@ -79,35 +76,32 @@ def update(argv):
         except FileNotFoundError:
             pass
 
-    for name in updateset:
-        page = requests.get('https://www.dmm.co.jp/digital/videoa/-/list/=/article=actress/id=' + name + '/sort=date/')
-        tree = html.fromstring(page.content)
-        urls = [x for x in tree.xpath('//a/@href') if 'https://www.dmm.co.jp/digital/videoa/-/detail/=/cid=' in x]
-        
-        videodict[name] = set()
-        for url in urls:
-            videodict[name].add(re.search(pattern, url).group(1))        
+    for name, oldvideos in oldvideodict.items():
 
+        print(".")
+        page = requests.get('https://www.dmm.co.jp/digital/videoa/-/list/=/article=actress/id=' + name + '/sort=date/')
+        
+        videodict[name] = set(re.findall(pattern, page.text))    
         newvideodict[name] = videodict[name].copy()
-        for video in oldvideodict[name]:
+
+        for video in oldvideos:
             newvideodict[name].discard(video)
         
         if len(newvideodict[name]) >= 120:
             print("new page for id=" + name + "\n")
     
-    for name in updateset:
-        for video in newvideodict[name]:
+    for name, newvideos in newvideodict.items():
+        for video in newvideos:
             webbrowser.open('https://www.dmm.co.jp/digital/videoa/-/detail/=/cid=' + video, new=2)
         
-    for name in updateset:
-        if len(newvideodict[name]):
+    for name, newvideos in newvideodict.items():
+        if newvideos:
             with open('data\\' + name + '.txt', 'w') as f:
                 for video in videodict[name]:
                     f.write("%s\n" % video)
+    print("done")
 
     
-        
-
 def main(argv):
     if len(argv) < 2:
         print("nothing to do")
