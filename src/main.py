@@ -26,7 +26,7 @@ def addName(names):
             continue
         nameset.add(name)
 
-        page = requests.get('https://www.dmm.co.jp/digital/videoa/-/list/=/article=actress/id=' + name + '/sort=date/')
+        page = requests.get('https://www.dmm.co.jp/digital/videoa/-/list/=/article=actress/id=' + name + '/limit=30/sort=date/')
         videos = set(re.findall(pattern, page.text))
 
         with open('data\\' + name + '.txt', 'w') as hf:
@@ -50,6 +50,28 @@ def initialize():
      
     with open("data\\namelist.txt", "w") as f:
         pass
+
+def removeName(argv):
+    with open("data\\namelist.txt", 'r') as f:
+        namelist = f.readlines()
+    nameset = set()
+    for name in namelist:
+        nameset.add(name.rstrip('\n'))
+    print("Removing")
+    removecount = 0
+    for name in argv:
+        print(".")
+        name = name.rstrip('\n')
+        nameset.discard(name)
+        try:
+            os.remove("data\\" + name + ".txt")
+            removecount += 1
+        except:
+            pass
+    if removecount:
+        with open("data\\namelist.txt", "w") as f:
+            for name in nameset:
+                f.write("%s\n" % name)
 
 def update(argv):
     with open("data\\namelist.txt", 'r') as f:
@@ -79,7 +101,7 @@ def update(argv):
     for name, oldvideos in oldvideodict.items():
 
         print(".")
-        page = requests.get('https://www.dmm.co.jp/digital/videoa/-/list/=/article=actress/id=' + name + '/sort=date/')
+        page = requests.get('https://www.dmm.co.jp/digital/videoa/-/list/=/article=actress/id=' + name + '/limit=30/sort=date/')
         
         videodict[name] = set(re.findall(pattern, page.text))    
         newvideodict[name] = videodict[name].copy()
@@ -87,18 +109,19 @@ def update(argv):
         for video in oldvideos:
             newvideodict[name].discard(video)
         
-        if len(newvideodict[name]) >= 120:
+        if len(newvideodict[name]) >= 30:
             print("new page for id=" + name + "\n")
-    
-    for name, newvideos in newvideodict.items():
-        for video in newvideos:
-            webbrowser.open('https://www.dmm.co.jp/digital/videoa/-/detail/=/cid=' + video, new=2)
         
     for name, newvideos in newvideodict.items():
         if newvideos:
             with open('data\\' + name + '.txt', 'w') as f:
                 for video in videodict[name]:
                     f.write("%s\n" % video)
+
+    for name, newvideos in newvideodict.items():
+        for video in newvideos:
+            webbrowser.open('https://www.dmm.co.jp/digital/videoa/-/detail/=/cid=' + video, new=2)
+
     print("done")
 
     
@@ -112,6 +135,8 @@ def main(argv):
         addName(argv[2:])
     elif argv[1] == "update":
         update(argv[2:])
+    elif argv[1] == "remove":
+        removeName(argv[2:])
     else:
         sys.exit(2)
     sys.exit(0)
