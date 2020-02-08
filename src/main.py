@@ -111,16 +111,17 @@ def update(argv):
         
         if len(newvideodict[name]) >= 30:
             print("new page for id=" + name + "\n")
-        
+    
+    newvideoset = set()
     for name, newvideos in newvideodict.items():
         if newvideos:
             with open('data\\' + name + '.txt', 'w') as f:
                 for video in videodict[name]:
                     f.write("%s\n" % video)
+                    newvideoset.add(video)
 
-    for name, newvideos in newvideodict.items():
-        for video in newvideos:
-            webbrowser.open('https://www.dmm.co.jp/digital/videoa/-/detail/=/cid=' + video, new=2)
+    for video in newvideoset:
+        webbrowser.open('https://www.dmm.co.jp/digital/videoa/-/detail/=/cid=' + video, new=2)
 
     print("done")
 
@@ -144,6 +145,3 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv)
-
-    
-        
