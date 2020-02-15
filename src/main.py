@@ -118,10 +118,10 @@ def update(argv):
             with open('data\\' + name + '.txt', 'w') as f:
                 for video in videodict[name]:
                     f.write("%s\n" % video)
+            for video in newvideos:
+                if video not in newvideoset:
                     newvideoset.add(video)
-
-    for video in newvideoset:
-        webbrowser.open('https://www.dmm.co.jp/digital/videoa/-/detail/=/cid=' + video, new=2)
+                    webbrowser.open('https://www.dmm.co.jp/digital/videoa/-/detail/=/cid=' + video, new=2)        
 
     print("done")
 
