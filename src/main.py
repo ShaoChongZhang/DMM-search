@@ -139,6 +139,7 @@ def main(argv):
     elif argv[1] == "remove":
         removeName(argv[2:])
     else:
+        print(argv[1] + " undefined") 
         sys.exit(2)
     sys.exit(0)
 
