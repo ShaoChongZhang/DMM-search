@@ -1,12 +1,10 @@
 from lxml import html
-import requests
 import re
-import webbrowser
 import sys
 import os
+from selenium import webdriver
 
-pattern = "https://www.dmm.co.jp/digital/videoa/-/detail/=/cid=(.*)/+"
-
+pattern = "https://www.r18.com/videos/vod/movies/detail/-/id=(.*)/\?dmmref=video.movies.new+"
 
 def addName(names):
 
@@ -19,6 +17,9 @@ def addName(names):
     f = open("data\\namelist.txt", 'a')
 
     print("Adding")
+    driver = webdriver.Firefox()
+    driver.get("https://www.r18.com/")
+    driver.find_element_by_link_text("Yes, I am.").click()
     for name in names:
         print(".")
         name = name.rstrip('\n')
@@ -26,8 +27,8 @@ def addName(names):
             continue
         nameset.add(name)
 
-        page = requests.get('https://www.dmm.co.jp/digital/videoa/-/list/=/article=actress/id=' + name + '/limit=30/sort=date/')
-        videos = set(re.findall(pattern, page.text))
+        page = driver.get('https://www.r18.com/videos/vod/movies/list/id=' + name + '/pagesize=30/price=all/sort=new/type=actress/page=1/')
+        videos = set(re.findall(pattern, driver.page_source))
 
         with open('data\\' + name + '.txt', 'w') as hf:
             for video in videos:
@@ -35,6 +36,7 @@ def addName(names):
 
         f.write("%s\n" % name)
     
+    driver.quit()
     f.close()
     print("done")
 
@@ -74,15 +76,15 @@ def removeName(argv):
                 f.write("%s\n" % name)
 
 def update(argv):
-    with open("data\\namelist.txt", 'r') as f:
-        namelist = f.readlines()
-    nameset = set()
-    for name in namelist:
-        nameset.add(name.rstrip('\n'))
-
+    
     if argv:
         updateset = set(argv)
     else:
+        with open("data\\namelist.txt", 'r') as f:
+            namelist = f.readlines()
+        nameset = set()
+        for name in namelist:
+            nameset.add(name.rstrip('\n'))
         updateset = nameset
 
     videodict = {}
@@ -96,14 +98,17 @@ def update(argv):
             with open('data\\' + name + '.txt', 'r') as f:
                 oldvideodict[name] = set(x.rstrip('\n') for x in f.readlines())
         except FileNotFoundError:
-            pass
-
+            with open('data\\' + name + '.txt', 'w') as hf:
+                oldvideodict[name] = set()
+    driver = webdriver.Firefox()
+    driver.get("https://www.r18.com/")
+    driver.find_element_by_link_text("Yes, I am.").click()
     for name, oldvideos in oldvideodict.items():
 
         print(".")
-        page = requests.get('https://www.dmm.co.jp/digital/videoa/-/list/=/article=actress/id=' + name + '/limit=30/sort=date/')
-        
-        videodict[name] = set(re.findall(pattern, page.text))    
+        driver.get('https://www.r18.com/videos/vod/movies/list/id=' + name + '/pagesize=30/price=all/sort=new/type=actress/page=1/')
+        pageSource = driver.page_source
+        videodict[name] = set(re.findall(pattern, pageSource))    
         newvideodict[name] = videodict[name].copy()
 
         for video in oldvideos:
@@ -115,21 +120,21 @@ def update(argv):
     newvideoset = set()
     for name, newvideos in newvideodict.items():
         if newvideos:
-            with open('data\\' + name + '.txt', 'w') as f:
-                for video in videodict[name]:
-                    f.write("%s\n" % video)
             for video in newvideos:
                 if video not in newvideoset:
                     newvideoset.add(video)
-                    webbrowser.open('https://www.dmm.co.jp/digital/videoa/-/detail/=/cid=' + video, new=2)        
+                    print('https://www.r18.com/videos/vod/movies/detail/-/id=' + video + '\n')
+            with open('data\\' + name + '.txt', 'w') as f:
+                for video in videodict[name]:
+                    f.write("%s\n" % video)
 
+    driver.quit()
     print("done")
 
     
 def main(argv):
     if len(argv) < 2:
-        print("nothing to do")
-        sys.exit(2)
+        update(None)
     elif argv[1] == "initialize":
         initialize()
     elif argv[1] == "add":
